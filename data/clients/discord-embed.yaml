@@ -1,0 +1,10 @@
+# Discord in-client embed/preview
+#   Please be aware that Discord does not currently publish a full set of IP addresses used by their backend services for media scraping.
+#   It is known that Discord uses differing mediums/spot-instances to pull content. As such, UA spoofing can occur with the first option
+#   below as many IP addresses used by Discord aren't properly tagged in their ptr records. This is common with some embed types (images).
+- name: discord-embed-dns
+  action: ALLOW
+  expression: lookupHost("crawl-" + remoteAddress.replace(".", "-") + ".ptr.discord.com").exists(ip, ip == remoteAddress)
+- name: discord-embed-ua
+  action: ALLOW
+  user_agent_regex: '^Mozilla/5\.0 \(compatible; Discordbot/[0-9]+(\.[0-9]+)?; \+https://discordapp\.com\)$'
