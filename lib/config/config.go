@@ -285,7 +285,6 @@ func (boi *BotOrImport) Valid() error {
 type StatusCodes struct {
 	Challenge int `json:"CHALLENGE"`
 	Deny      int `json:"DENY"`
-	Reject    int `json:"REJECT"`
 }
 
 func (sc StatusCodes) Valid() error {
