@@ -10,3 +10,4 @@ bots:
 status_codes:
   CHALLENGE: 401
   DENY: 403
+  REJECT: 444

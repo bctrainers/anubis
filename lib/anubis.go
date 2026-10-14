@@ -472,6 +472,19 @@ func (s *Server) checkRules(w http.ResponseWriter, r *http.Request, cr policy.Ch
 		lg.DebugContext(r.Context(), "rule hash", "hash", hash)
 		s.respondWithStatus(w, r, fmt.Sprintf("%s %s", localizer.T("access_denied"), hash), "", s.policy.StatusCodes.Deny)
 		return true
+	case config.RuleReject:
+		s.ClearCookie(w, CookieOpts{Path: cookiePath, Host: r.Host})
+		lg.InfoContext(r.Context(), "explicit reject")
+		if rule == nil {
+			lg.ErrorContext(r.Context(), "rule is nil, cannot calculate checksum")
+			s.respondWithError(w, r, fmt.Sprintf("%s \"maybeReverseProxy.RuleReject\"", localizer.T("internal_server_error")), makeCode(ErrActualAnubisBug))
+			return true
+		}
+		hash := rule.Hash()
+
+		lg.DebugContext(r.Context(), "rule hash", "hash", hash)
+		s.respondWithStatus(w, r, fmt.Sprintf("%s %s", localizer.T("access_denied"), hash), "", s.policy.StatusCodes.Reject)
+		return true
 	case config.RuleChallenge:
 		lg.DebugContext(r.Context(), "challenge requested")
 	case config.RuleBenchmark:
@@ -887,7 +900,7 @@ func (s *Server) check(r *http.Request, lg *slog.Logger) (policy.CheckResult, *p
 
 		if match {
 			switch b.Action {
-			case config.RuleDeny, config.RuleAllow, config.RuleBenchmark, config.RuleChallenge:
+			case config.RuleDeny, config.RuleReject, config.RuleAllow, config.RuleBenchmark, config.RuleChallenge:
 				// Return a copy of the rule, as the shared policy must not be modified.
 				bot := *b
 				return cr("bot/"+b.Name, b.Action, weight), &bot, nil

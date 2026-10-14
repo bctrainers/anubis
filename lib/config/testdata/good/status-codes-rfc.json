@@ -8,7 +8,8 @@
   ],
   "status_codes": {
     "CHALLENGE": 403,
-    "DENY": 403
+    "DENY": 403,
+    "REJECT": 444
   },
   "metrics": {
     "bind": ":9090",

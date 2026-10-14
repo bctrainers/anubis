@@ -38,6 +38,7 @@ const (
 	RuleUnknown   Rule = ""
 	RuleAllow     Rule = "ALLOW"
 	RuleDeny      Rule = "DENY"
+	RuleReject    Rule = "REJECT"
 	RuleChallenge Rule = "CHALLENGE"
 	RuleWeigh     Rule = "WEIGH"
 	RuleBenchmark Rule = "DEBUG_BENCHMARK"
@@ -45,7 +46,7 @@ const (
 
 func (r Rule) Valid() error {
 	switch r {
-	case RuleAllow, RuleDeny, RuleChallenge, RuleWeigh, RuleBenchmark:
+	case RuleAllow, RuleDeny, RuleReject, RuleChallenge, RuleWeigh, RuleBenchmark:
 		return nil
 	default:
 		return ErrUnknownAction
@@ -177,7 +178,7 @@ func (b *BotConfig) Valid() error {
 	}
 
 	switch b.Action {
-	case RuleAllow, RuleBenchmark, RuleChallenge, RuleDeny, RuleWeigh:
+	case RuleAllow, RuleBenchmark, RuleChallenge, RuleDeny, RuleReject, RuleWeigh:
 		// okay
 	default:
 		errs = append(errs, fmt.Errorf("%w: %q", ErrUnknownAction, b.Action))
@@ -285,6 +286,7 @@ func (boi *BotOrImport) Valid() error {
 type StatusCodes struct {
 	Challenge int `json:"CHALLENGE"`
 	Deny      int `json:"DENY"`
+	Reject    int `json:"REJECT"`
 }
 
 func (sc StatusCodes) Valid() error {
@@ -296,6 +298,10 @@ func (sc StatusCodes) Valid() error {
 
 	if sc.Deny == 0 || (sc.Deny < 100 && sc.Deny >= 599) {
 		errs = append(errs, fmt.Errorf("%w: deny is %d", ErrStatusCodeNotValid, sc.Deny))
+	}
+
+	if sc.Reject == 0 || (sc.Reject < 100 && sc.Reject >= 599) {
+		errs = append(errs, fmt.Errorf("%w: reject is %d", ErrStatusCodeNotValid, sc.Reject))
 	}
 
 	if len(errs) != 0 {
@@ -389,6 +395,7 @@ func Load(fin io.Reader, fname string) (*Config, error) {
 		StatusCodes: StatusCodes{
 			Challenge: http.StatusOK,
 			Deny:      http.StatusOK,
+			Reject:    444,
 		},
 		DNSTTL: DnsTTL{
 			Forward: 300,
@@ -403,6 +410,11 @@ func Load(fin io.Reader, fname string) (*Config, error) {
 
 	if err := yaml.NewYAMLToJSONDecoder(fin).Decode(&c); err != nil {
 		return nil, fmt.Errorf("can't parse policy config YAML %s: %w", fname, err)
+	}
+
+	// Default REJECT to 444 if not specified (nginx-style connection close)
+	if c.StatusCodes.Reject == 0 {
+		c.StatusCodes.Reject = 444
 	}
 
 	if err := c.Valid(); err != nil {

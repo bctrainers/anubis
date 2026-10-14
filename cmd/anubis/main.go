@@ -346,7 +346,7 @@ func run(ctx context.Context) {
 
 	ruleErrorIDs := make(map[string]string)
 	for _, rule := range policy.Bots {
-		if rule.Action != config.RuleDeny {
+		if rule.Action != config.RuleDeny && rule.Action != config.RuleReject {
 			continue
 		}
 

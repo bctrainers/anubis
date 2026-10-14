@@ -2,12 +2,15 @@
 
 Out of the box, Anubis will reply with `HTTP 200` for challenge and denial pages. This is intended to make AI scrapers have a hard time with your website because when they are faced with a non-200 response, they will hammer the page over and over until they get a 200 response. This behavior may not be desirable, as such Anubis lets you customize what HTTP status codes are returned when Anubis throws challenge and denial pages.
 
+The `REJECT` action is a secondary denial method that returns a configurable unique HTTP status code (defaulting to nginx's non-standard `444`). Use it when you want an explicit hard reject that differs from the standard `DENY` response (commonly configured as `403`).
+
 This is configured in the `status_codes` block of your [bot policy file](../policies.mdx):
 
 ```yaml
 status_codes:
   CHALLENGE: 200
   DENY: 200
+  REJECT: 444
 ```
 
 To match CloudFlare's behavior, use a configuration like this:
@@ -16,4 +19,7 @@ To match CloudFlare's behavior, use a configuration like this:
 status_codes:
   CHALLENGE: 403
   DENY: 403
+  REJECT: 444
 ```
+
+In bot rules, set `action: REJECT` to use the reject status code instead of `DENY`.
